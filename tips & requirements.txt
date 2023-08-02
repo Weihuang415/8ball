@@ -1,0 +1,31 @@
+**********************
+*    Raspberry Pi    *
+**********************
+
+<< MPU 6050 >>
+1. enable I2C in raspberry config
+2. check your smbus (mine is 11)
+3. install the example package
+  # sudo apt install python3-smbus
+  # pip install mpu6050-raspberrypi
+
+! be careful about the file path of the mpu6050 module #from mpu6050 import mpu6050
+
+
+<< youtube API >>
+- Install the googleapiclient package 
+  # pip install google-api-python-client
+
+
+<< yt_dlp >>
+- Install the youtube_dlp package
+  #pip install yt-dlp
+  #YOUTUBE_API_VERSION = 'v3'
+
+
+<< VLC media player >>
+- install the vlc package (32 bits)
+  #pip install python-vlc
+
+
+
