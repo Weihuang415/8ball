@@ -1,3 +1,8 @@
+'''
+(v) After downloading, it removes 'the oldest video'
+(v) [00, 01, 02] > [02, 03, 04]
+(v) default / transition video between each flip
+'''
 import requests
 import os
 import random
