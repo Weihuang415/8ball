@@ -20,12 +20,16 @@ sensor = mpu6050(0x68)
 
 prefix = ['IMG ', 'IMG_', 'IMG-', 'DSC ']
 postfix = [' MOV', '.MOV', ' .MOV']
-DEVELOPER_KEY = 'AIzaSyBXA6zoGT0nXM2CEqkr95Y-oxXxcQMHvRg' 
+DEVELOPER_KEY = 'AIzaSyCGp2bkWFADc2zcHr_VPMl6W8CVbbs1IJc' 
 YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
 
+
+
 pickedVid = ''
-cachedVids = sorted(glob.glob('VideoDL/*.mp4'))
+cachedVids = glob.glob('VideoDL/*.mp4')
+# cachedVids = [os.path.basename(file) for file in glob.glob('VideoDL/*.mp4')] #good looking filename without VideoDL/ 
+
 print("cachedVids:", cachedVids)
 output_dir = 'VideoDL'  
 
@@ -39,9 +43,9 @@ i_search = 0
 
 def youtube_search():
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=DEVELOPER_KEY)
-    videos = []
+    videos_search = []
     
-    while len(videos) < 5: #once it has 5 searching results
+    while len(videos_search) < 5: #once it has 5 searching results
         try:
             search_response = youtube.search().list(
                 q=random.choice(prefix) + str(random.randint(999, 9999)) + random.choice(postfix),
@@ -54,17 +58,18 @@ def youtube_search():
             ).execute()
             
             for search_result in search_response.get('items', []):
-                videos.append(search_result['id']['videoId'])
+                videos_search.append(search_result['id']['videoId'])
         
         except Exception as e:
             print(e)        
-    print('videos:', videos)
-    return videos
+    print('videos_search:', videos_search)
+    return videos_search
 
 ### DOWNLOAD
-def downloadVid():
+async def downloadVid():
     global searchResult
-    print(searchResult)
+    print("S", searchResult)
+    # searchResult = youtube_search()
     
     video_id = searchResult[i_search] #youtube_search()
     if video_id:
@@ -105,6 +110,7 @@ def my_hook(d):
         cachedVids = sorted(glob.glob('*.mp4'))
         print('Done downloading, now converting ...')
         #print("vids: " + str(cachedVids))
+
 # VLC player opens (multiprocess)
 def VLC_open():
     global playing
@@ -116,8 +122,9 @@ def VLC_open():
     else:
         print("No videos available.")
         
-def play_video_process(pickedVid):  
-    cvlc_cmd = f"cvlc {os.path.abspath(pickedVid)} --fullscreen --repeat --extraintf=http --http-host=127.0.0.1 --http-port=8080 --http-password=asdf"
+def play_video_process(pickedVid):  # VideoDefault/default2.mp4
+    cvlc_cmd = f"cvlc VideoDL/{pickedVid} --fullscreen --repeat --extraintf=http --http-host=127.0.0.1 --http-port=8080 --http-password=asdf"
+    # print('path', {os.path.abspath()}) "{os.path.abspath(pickedVid)}"
     os.system(cvlc_cmd)
     print("Video_process", pickedVid)
 
@@ -127,7 +134,7 @@ def basic_auth(username, password):
     return f'Basic {token}'
 
 #Play a Video
-def playNext():
+async def playNext():
     global playing
     global played    
     global pickedVid
@@ -201,6 +208,7 @@ async def Tasks():
     await asyncio.gather(playNext(), downloadVid())
 
 
+
 sys.path.insert(0, '/home/pi/divin8tion/idea/divs/mpu6050')
 from mpu6050.AngleOMeter_noLoop import angle_read
 import time
@@ -208,11 +216,24 @@ import time
 def sensorDetect():
     global screenUp
     kalAngleZ = angle_read()
+
+    # if kalAngleZ < -100 or kalAngleZ > 100:
+    #     screenUp = False
+    #     # print(kalAngleZ)
+    # else:
+    #     screenUp = True
+    #     # print(kalAngleZ)
     
-    if ((kalAngleZ < -100) or (kalAngleZ > 100)):  #down
-        screenUp = False
-    if (10 > kalAngleZ > -10):  #up
+    if 30 > kalAngleZ > -30:
         screenUp = True
+    else:
+        screenUp = False
+    
+    # if ((kalAngleZ < -100) or (kalAngleZ > 100)):  #down
+    #     screenUp = False
+    # if (10 > kalAngleZ > -10):  #up
+    #     screenUp = True
+    #     print(kalAngleZ)
     
 if __name__ == '__main__':
     VLC_open()
@@ -222,19 +243,18 @@ if __name__ == '__main__':
     while True:
         sensorDetect()
         if screenUp == False: #it's down
-    
             if canFlip == False:
                 print('---Down---')  
-                
                 stopPlaying()
                 delete_video()
-                
+
                 canFlip = True
 
             
         else:                  # It's up
-            # print('up')
+            
             if canFlip == True:
+                print('up')
                 #Async downlaoading and playNext
                 asyncio.run(Tasks())
 
@@ -242,11 +262,10 @@ if __name__ == '__main__':
                 print("index:", i_search)
             
                 #search again if it runs out of the searching list
-                if i_search >= 5:
-                    SearchResult = youtube_search() 
+                if i_search >= 3:
                     i_search = 0
-                canFlip = False # Set it to False after playing the videoS
-
+                    searchResult = youtube_search() 
+                canFlip = False # Set it to False after playing the videos
         sleep(0.04)
 
 
